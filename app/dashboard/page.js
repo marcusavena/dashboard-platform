@@ -3,30 +3,14 @@
 import { useEffect, useState } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
-// Define the type for our deals
-interface Deal {
-  id: number
-  deal_name: string
-  company_name: string
-  broker: string | null
-  funded_amount: number | string
-  rate: number | string
-  term_days: number | null
-  date_funded: string | null
-  created_at: string
-}
-
-// Simple Dashboard Component
 export default function Dashboard() {
-  const [deals, setDeals] = useState<Deal[]>([])
+  const [deals, setDeals] = useState([])
   const [loading, setLoading] = useState(true)
   const [totalFunded, setTotalFunded] = useState(0)
   
-  // Create supabase client
   const supabase = createClientComponentClient()
 
   useEffect(() => {
-    // Fetch MCA deals from database
     async function fetchDeals() {
       try {
         const { data, error } = await supabase
@@ -41,9 +25,8 @@ export default function Dashboard() {
         }
 
         if (data) {
-          setDeals(data as Deal[])
-          // Calculate total funded amount
-          const total = data.reduce((sum: number, deal: any) => {
+          setDeals(data)
+          const total = data.reduce((sum, deal) => {
             const amount = Number(deal.funded_amount || 0)
             return sum + amount
           }, 0)
@@ -57,7 +40,7 @@ export default function Dashboard() {
     }
 
     fetchDeals()
-  }, [supabase])
+  }, [])
 
   if (loading) {
     return <div className="p-8">Loading your dashboard...</div>
@@ -67,7 +50,6 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gray-100 p-8">
       <h1 className="text-3xl font-bold mb-8">MCA Dashboard</h1>
       
-      {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-sm text-gray-600">Total Funded</h3>
@@ -85,7 +67,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Deals Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="px-6 py-4 border-b">
           <h2 className="text-xl font-semibold">Recent Deals</h2>
