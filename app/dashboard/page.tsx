@@ -3,9 +3,22 @@
 import { useEffect, useState } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
+// Define the type for our deals
+interface Deal {
+  id: number
+  deal_name: string
+  company_name: string
+  broker: string | null
+  funded_amount: number | string
+  rate: number | string
+  term_days: number | null
+  date_funded: string | null
+  created_at: string
+}
+
 // Simple Dashboard Component
 export default function Dashboard() {
-  const [deals, setDeals] = useState([])
+  const [deals, setDeals] = useState<Deal[]>([])
   const [loading, setLoading] = useState(true)
   const [totalFunded, setTotalFunded] = useState(0)
   
@@ -23,13 +36,17 @@ export default function Dashboard() {
 
         if (error) {
           console.error('Error fetching deals:', error)
+          setLoading(false)
           return
         }
 
         if (data) {
-          setDeals(data)
+          setDeals(data as Deal[])
           // Calculate total funded amount
-          const total = data.reduce((sum, deal) => sum + Number(deal.funded_amount || 0), 0)
+          const total = data.reduce((sum: number, deal: any) => {
+            const amount = Number(deal.funded_amount || 0)
+            return sum + amount
+          }, 0)
           setTotalFunded(total)
         }
       } catch (err) {
@@ -92,7 +109,7 @@ export default function Dashboard() {
                   <td className="px-6 py-4 whitespace-nowrap">{deal.rate}</td>
                   <td className="px-6 py-4 whitespace-nowrap">{deal.term_days} days</td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {new Date(deal.date_funded).toLocaleDateString()}
+                    {deal.date_funded ? new Date(deal.date_funded).toLocaleDateString() : 'N/A'}
                   </td>
                 </tr>
               ))}
