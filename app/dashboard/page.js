@@ -27,14 +27,14 @@ export default function Dashboard() {
     '#6B4A3D', // Darker Cognac
   ]
 
-  // Fetch MCA deals
+  // Fetch frontier deals
   useEffect(() => {
     async function fetchDeals() {
       try {
         const { data, error } = await supabase
-          .from('mca_deals')
+          .from('frontier_deals')
           .select('*')
-          .order('date_funded', { ascending: false })
+          .order('deal_date', { ascending: false })
 
         if (error) {
           console.error('Error fetching deals:', error)
@@ -44,8 +44,9 @@ export default function Dashboard() {
 
         if (data) {
           setDeals(data)
+          // Calculate total funded using frontier_amount
           const total = data.reduce((sum, deal) => {
-            const amount = Number(deal.funded_amount || 0)
+            const amount = Number(deal.frontier_amount || 0)
             return sum + amount
           }, 0)
           setTotalFunded(total)
@@ -205,6 +206,9 @@ export default function Dashboard() {
     Object.keys(d).filter(k => k !== 'date' && k !== 'total')
   ))]
 
+  // Filter active deals for the table (where payoff_date is null)
+  const activeDeals = deals.filter(deal => !deal.payoff_date)
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#E8DCC4' }}>
       {/* Header */}
@@ -273,7 +277,7 @@ export default function Dashboard() {
                 ${totalFunded.toLocaleString()}
               </p>
               <p className="text-sm mt-2" style={{ color: '#8B6F47' }}>
-                Year to Date
+                Frontier Investment Total
               </p>
             </div>
           </div>
@@ -290,7 +294,7 @@ export default function Dashboard() {
                 {deals.length}
               </p>
               <p className="text-sm mt-2" style={{ color: '#8B6F47' }}>
-                Active Positions
+                All Positions
               </p>
             </div>
           </div>
@@ -400,7 +404,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Deals Table */}
+        {/* Active Deals Table */}
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           <div className="px-6 py-4" style={{ 
             backgroundColor: '#404040',
@@ -410,7 +414,7 @@ export default function Dashboard() {
               color: '#E8DCC4',
               fontFamily: 'Georgia, serif' 
             }}>
-              Recent Investment Activity
+              Active Investment Positions
             </h2>
           </div>
           <div className="overflow-x-auto">
@@ -423,7 +427,7 @@ export default function Dashboard() {
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider" 
                       style={{ color: '#536878' }}>
-                    Funded Amount
+                    Frontier Amount
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider" 
                       style={{ color: '#536878' }}>
@@ -431,16 +435,24 @@ export default function Dashboard() {
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider" 
                       style={{ color: '#536878' }}>
-                    Term
+                    Term (Days)
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider" 
                       style={{ color: '#536878' }}>
-                    Funding Date
+                    Deal Date
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider" 
+                      style={{ color: '#536878' }}>
+                    Profit
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider" 
+                      style={{ color: '#536878' }}>
+                    Status
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y" style={{ borderColor: '#E8DCC4' }}>
-                {deals.map((deal) => (
+                {activeDeals.map((deal) => (
                   <tr key={deal.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap font-medium" 
                         style={{ color: '#404040' }}>
@@ -448,19 +460,35 @@ export default function Dashboard() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap" 
                         style={{ color: '#2C3E50', fontWeight: '600' }}>
-                      ${Number(deal.funded_amount).toLocaleString()}
+                      ${Number(deal.frontier_amount).toLocaleString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap" 
                         style={{ color: '#536878' }}>
-                      {deal.rate}
+                      {deal.frontier_rate}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap" 
                         style={{ color: '#536878' }}>
-                      {deal.term_days} days
+                      {deal.deal_duration}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap" 
                         style={{ color: '#536878' }}>
-                      {deal.date_funded ? new Date(deal.date_funded).toLocaleDateString() : 'N/A'}
+                      {new Date(deal.deal_date).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap" 
+                        style={{ 
+                          color: deal.frontier_profit > 0 ? '#834333' : '#536878',
+                          fontWeight: deal.frontier_profit > 0 ? '600' : 'normal'
+                        }}>
+                      {deal.frontier_profit ? `$${Number(deal.frontier_profit).toLocaleString()}` : '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="px-2 py-1 text-xs font-medium rounded-full"
+                            style={{
+                              backgroundColor: '#E8DCC4',
+                              color: '#834333'
+                            }}>
+                        Active
+                      </span>
                     </td>
                   </tr>
                 ))}
